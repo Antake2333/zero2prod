@@ -5,4 +5,18 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+
+# Fast compile times during development
+# On Windows
+# ```
+# cargo install -f cargo-binutils
+# rustup component add llvm-tools-preview
+# ```
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+[target.x86_64-pc-windows-gnu]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+
 [dependencies]
+
