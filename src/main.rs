@@ -1,5 +1,5 @@
 use std::net::TcpListener;
-use zero2prod::configuration::{get_configuation};
+use zero2prod::configuration::get_configuation;
 use zero2prod::startup::run;
 
 #[tokio::main]
