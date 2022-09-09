@@ -1,7 +1,7 @@
 use sqlx::{Connection, PgConnection};
 use std::net::TcpListener;
 use zero2prod::configuration::get_configuation;
-use zero2prod::{configuration, startup};
+use zero2prod::{startup};
 #[tokio::test]
 async fn health_check_works() {
     let address = spawn_app();
