@@ -1,11 +1,12 @@
-use sqlx::PgPool;
+use sqlx::{Connection, Executor, PgConnection, PgPool};
 use std::net::TcpListener;
-use zero2prod::configuration::get_configuation;
+use uuid::Uuid;
+use zero2prod::configuration::{get_configuation, DatabaseSettings};
 use zero2prod::startup;
 
 #[tokio::test]
 async fn health_check_works() {
-    let app=spawn_app().await;
+    let app = spawn_app().await;
     let client = reqwest::Client::new();
     let response = client
         .get(&format!("{}/health_check", &app.address))
@@ -25,16 +26,41 @@ async fn spawn_app() -> TestApp {
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port");
     let port = listener.local_addr().unwrap().port();
     let address = format!("http://127.0.0.1:{}", port);
-    let configuation = get_configuation().expect("Failed to get configuration");
-    let connection_pool = PgPool::connect(&configuation.database.connection_string())
-        .await
-        .expect("Failed to connect to Postgres");
+    let mut configuation = get_configuation().expect("Failed to get configuration");
+    // 确保每次测试都是成功的,那么数据库除开基础数据,应该是空白的
+    configuation.database.database_name = Uuid::new_v4().to_string();
+    let connection_pool = configure_database(&configuation.database).await;
     let server = startup::run(listener, connection_pool.clone()).expect("Failed to bind address");
     let _ = tokio::spawn(server);
     TestApp {
         address,
         db_pool: connection_pool,
     }
+}
+
+/**
+ * @description: 重置数据库
+ */
+pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
+    // 打开一个数据连接
+    let mut connection = PgConnection::connect(&config.connection_string_without_db())
+        .await
+        .expect("Failed to connect to Postgres");
+    // 创建一个新的数据库
+    connection
+        .execute(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
+        .await
+        .expect("Failed to create database");
+    // 获取一个新的连接池
+    let connection_pool = PgPool::connect(&config.connection_string())
+        .await
+        .expect("Failed to connect to Postgres");
+    // 执行数据库文件,该文件夹下的sql文件
+    sqlx::migrate!("./migrations")
+        .run(&connection_pool)
+        .await
+        .expect("Failed to migrate database");
+    connection_pool
 }
 
 #[tokio::test]
