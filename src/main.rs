@@ -2,9 +2,11 @@ use sqlx::PgPool;
 use std::net::TcpListener;
 use zero2prod::configuration::get_configuation;
 use zero2prod::startup::run;
-
+use env_logger::Env;
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
+    // 初始化日志
+    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     let configuration = get_configuation().expect("Failed to get configuration");
     let connection_pool = PgPool::connect(&configuration.database.connection_string())
         .await
