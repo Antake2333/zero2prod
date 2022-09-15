@@ -1,8 +1,8 @@
+use env_logger::Env;
 use sqlx::PgPool;
 use std::net::TcpListener;
 use zero2prod::configuration::get_configuation;
 use zero2prod::startup::run;
-use env_logger::Env;
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     // 初始化日志
